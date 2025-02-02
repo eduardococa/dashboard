@@ -33,9 +33,9 @@ def load_data():
     productos_mas_vendidos = order_items.merge(products, on="product_id").groupby("product_name")["quantity"].sum().reset_index()
     productos_mas_vendidos = productos_mas_vendidos.sort_values(by="quantity", ascending=False).head(10)
     
-    return total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos, ventas_por_año
+    return total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos, ventas_por_año, products
 
-total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos, ventas_por_año = load_data()
+total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos, ventas_por_año, products = load_data()
 
 # Título
 st.title("📊 Dashboard de Ventas")
