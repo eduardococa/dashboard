@@ -40,6 +40,17 @@ total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos = loa
 # Título
 st.title("📊 Dashboard de Ventas")
 
+# Filtros interactivos
+st.sidebar.header("Filtros")
+selected_region = st.sidebar.selectbox("Selecciona una región", ["Todas"] + list(ventas_por_region["state"]))
+selected_product = st.sidebar.selectbox("Selecciona un producto", ["Todos"] + list(productos_mas_vendidos["product_name"]))
+
+# Aplicar filtros a los datos
+if selected_region != "Todas":
+    ventas_por_region = ventas_por_region[ventas_por_region["state"] == selected_region]
+if selected_product != "Todos":
+    productos_mas_vendidos = productos_mas_vendidos[productos_mas_vendidos["product_name"] == selected_product]
+
 # KPI Cards
 col1, col2, col3 = st.columns(3)
 col1.metric("Total de Ventas", f"${total_ventas:,.2f}")
@@ -80,19 +91,3 @@ fig_productos = px.bar(
     color="product_name"
 )
 st.plotly_chart(fig_productos, use_container_width=True)
-
-# Filtros interactivos
-st.sidebar.header("Filtros")
-selected_region = st.sidebar.selectbox("Selecciona una región", ["Todas"] + list(ventas_por_region["state"]))
-if selected_region != "Todas":
-    ventas_filtradas = ventas_por_region[ventas_por_region['state'] == selected_region]
-    st.write(f"### Ventas en {selected_region}: ${ventas_filtradas['total_price'].values[0]:,.2f}")
-else:
-    st.write("### Mostrando todas las regiones")
-
-selected_product = st.sidebar.selectbox("Selecciona un producto", ["Todos"] + list(productos_mas_vendidos["product_name"]))
-if selected_product != "Todos":
-    producto_filtrado = productos_mas_vendidos[productos_mas_vendidos['product_name'] == selected_product]
-    st.write(f"### Ventas del producto {selected_product}: {producto_filtrado['quantity'].values[0]} unidades vendidas")
-else:
-    st.write("### Mostrando todos los productos")
