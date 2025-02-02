@@ -24,7 +24,7 @@ def load_data():
     # Crecimiento de ventas por año
     ventas_por_año = orders.merge(order_items, on="order_id")
     ventas_por_año["year"] = ventas_por_año["order_date"].dt.year
-    crecimiento_anual = ventas_por_año.groupby("year")["total_price"].sum().pct_change() * 100
+    crecimiento_anual = ventas_por_año.groupby("year")["total_price"].sum().reset_index()
     
     # Ventas por región
     ventas_por_region = ventas_por_año.merge(stores, on="store_id").groupby("state")["total_price"].sum().reset_index()
@@ -33,9 +33,9 @@ def load_data():
     productos_mas_vendidos = order_items.merge(products, on="product_id").groupby("product_name")["quantity"].sum().reset_index()
     productos_mas_vendidos = productos_mas_vendidos.sort_values(by="quantity", ascending=False).head(10)
     
-    return total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos
+    return total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos, ventas_por_año
 
-total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos = load_data()
+total_ventas, crecimiento_anual, ventas_por_region, productos_mas_vendidos, ventas_por_año = load_data()
 
 # Título
 st.title("📊 Dashboard de Ventas")
@@ -46,16 +46,19 @@ selected_region = st.sidebar.selectbox("Selecciona una región", ["Todas"] + lis
 selected_product = st.sidebar.selectbox("Selecciona un producto", ["Todos"] + list(productos_mas_vendidos["product_name"]))
 
 # Aplicar filtros a los datos
+filtered_data = ventas_por_año.copy()
 if selected_region != "Todas":
     ventas_por_region = ventas_por_region[ventas_por_region["state"] == selected_region]
+    filtered_data = filtered_data[filtered_data["state"] == selected_region]
 if selected_product != "Todos":
     productos_mas_vendidos = productos_mas_vendidos[productos_mas_vendidos["product_name"] == selected_product]
+    filtered_data = filtered_data[filtered_data["product_id"] == products[products["product_name"] == selected_product]["product_id"].values[0]]
 
 # KPI Cards
 col1, col2, col3 = st.columns(3)
-col1.metric("Total de Ventas", f"${total_ventas:,.2f}")
-col2.metric("Crecimiento 2017", f"{crecimiento_anual.get(2017, 0):.2f}%")
-col3.metric("Crecimiento 2018", f"{crecimiento_anual.get(2018, 0):.2f}%")
+col1.metric("Total de Ventas", f"${filtered_data['total_price'].sum():,.2f}")
+col2.metric("Crecimiento 2017", f"{crecimiento_anual[crecimiento_anual['year'] == 2017]['total_price'].values[0] if not crecimiento_anual[crecimiento_anual['year'] == 2017].empty else 0:.2f}%")
+col3.metric("Crecimiento 2018", f"{crecimiento_anual[crecimiento_anual['year'] == 2018]['total_price'].values[0] if not crecimiento_anual[crecimiento_anual['year'] == 2018].empty else 0:.2f}%")
 
 # Gráfico de barras: Ventas por región
 st.subheader("📍 Ventas por Región")
@@ -72,10 +75,11 @@ st.plotly_chart(fig_barras, use_container_width=True)
 # Gráfico de líneas: Crecimiento Anual
 st.subheader("📈 Crecimiento Anual de Ventas")
 fig_lineas = px.line(
-    x=crecimiento_anual.index, 
-    y=crecimiento_anual.values, 
+    filtered_data.groupby("year")["total_price"].sum().reset_index(),
+    x="year", 
+    y="total_price", 
     title="Crecimiento de Ventas por Año",
-    labels={"x": "Año", "y": "Crecimiento (%)"},
+    labels={"year": "Año", "total_price": "Crecimiento (%)"},
     markers=True
 )
 st.plotly_chart(fig_lineas, use_container_width=True)
